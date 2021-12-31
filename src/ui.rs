@@ -1,5 +1,5 @@
 use crate::events::{Event, Events};
-use crate::puzzle::{self, Puzzle, PuzzleType};
+use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle};
 
 use std::io::{self, Stdout};
 use termion::{
@@ -55,6 +55,10 @@ impl Point {
             self.y += 1;
         }
     }
+
+    pub fn to_board_cords(&self) -> usize {
+        self.x + ROWS * self.y
+    }
 }
 
 type SudokuFrame<'a> =
@@ -62,13 +66,17 @@ type SudokuFrame<'a> =
 
 pub struct UI {
     puzzle: Puzzle,
+    displayed_puzzle: SudokuPuzzle,
     highlighted_cell: Point,
 }
 
 impl UI {
     pub fn new() -> UI {
+        let new_puzzle = Puzzle::new_puzzle(PuzzleType::Easy);
+        let displayed_puzzle = new_puzzle.puzzle.clone();
         UI {
-            puzzle: Puzzle::new_puzzle(PuzzleType::Easy),
+            puzzle: new_puzzle,
+            displayed_puzzle: displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
         }
     }
@@ -101,10 +109,26 @@ impl UI {
                     Key::Down | Key::Char('j') => self.highlighted_cell.down(),
                     Key::Left | Key::Char('h') => self.highlighted_cell.left(),
                     Key::Right | Key::Char('l') => self.highlighted_cell.right(),
-                    Key::Char('q') => break,
+                    Key::Char('1') => self.update_displayed_board('1'),
+                    Key::Char('2') => self.update_displayed_board('2'),
+                    Key::Char('3') => self.update_displayed_board('3'),
+                    Key::Char('4') => self.update_displayed_board('4'),
+                    Key::Char('5') => self.update_displayed_board('5'),
+                    Key::Char('6') => self.update_displayed_board('6'),
+                    Key::Char('7') => self.update_displayed_board('7'),
+                    Key::Char('8') => self.update_displayed_board('8'),
+                    Key::Char('9') => self.update_displayed_board('9'),
+                    Key::Char(' ') => self.update_displayed_board('_'),
+                    Key::Char('q') | Key::Ctrl('c') => break,
                     _ => {}
                 }
             }
+        }
+    }
+
+    fn update_displayed_board(&mut self, val: char) {
+        if self.puzzle.puzzle[self.highlighted_cell.to_board_cords()] == '_' {
+            self.displayed_puzzle[self.highlighted_cell.to_board_cords()] = val;
         }
     }
 }
@@ -160,9 +184,9 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
         let mut square_cell_counter = 0;
         let cells = split_rect_into_three_by_three_square(square);
         for cell in cells {
-            let (mut bg_color, text_color) = match current_square % 2 {
-                0 => (Color::White, Color::Black),
-                _ => (Color::Gray, Color::Black),
+            let (mut bg_color, text_color, locked_square_color) = match current_square % 2 {
+                0 => (Color::White, Color::Black, Color::Gray),
+                _ => (Color::Gray, Color::Black, Color::White),
             };
 
             let point_cords = square_to_point_cords(current_square, square_cell_counter);
@@ -171,11 +195,17 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
                 bg_color = Color::Rgb(184, 255, 184);
             }
 
-            let char = ui.puzzle.puzzle[point_cords.x + 9 * point_cords.y];
+            let char = ui.displayed_puzzle[point_cords.to_board_cords()];
+            let fg_color = if ui.puzzle.puzzle[point_cords.to_board_cords()] != '_' {
+                locked_square_color
+            } else {
+                bg_color
+            };
 
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().bg(bg_color).fg(bg_color));
+                .border_style(Style::default().bg(bg_color).fg(fg_color));
+
             let text = Paragraph::new(format!(" {}  ", if char == '_' { ' ' } else { char }))
                 .alignment(Alignment::Center)
                 .style(

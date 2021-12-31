@@ -1,4 +1,4 @@
-const PUZZLES_EASY: [([char; 81], [char; 81]); 1] = [((
+const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [((
     [
         '7', '2', '3', '_', '_', '_', '1', '5', '9', '6', '_', '_', '3', '_', '2', '_', '_', '8',
         '8', '_', '_', '_', '1', '_', '_', '_', '2', '_', '7', '_', '6', '5', '4', '_', '2', '_',
@@ -15,14 +15,16 @@ const PUZZLES_EASY: [([char; 81], [char; 81]); 1] = [((
     ],
 ))];
 
+pub type SudokuPuzzle = [char; 81];
+
 pub enum PuzzleType {
     Easy,
     Hard,
 }
 
 pub struct Puzzle {
-    pub puzzle: [char; 81],
-    pub solution: [char; 81],
+    pub puzzle: SudokuPuzzle,
+    pub solution: SudokuPuzzle,
 }
 
 impl Puzzle {
