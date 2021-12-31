@@ -16,6 +16,9 @@ const COLS: usize = 9;
 const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
+const CONTROLS: &str =
+    "Select cell: hjkl | ← ↓ ↑ →\nStart new puzzle(Easy, Med, Hard): e, m, h\nGive up: g\nQuit: q";
+
 #[derive(PartialEq)]
 pub struct Point {
     x: usize,
@@ -135,6 +138,31 @@ impl UI {
                         }
                         current_square += 1;
                     }
+
+                    //draw the controls window
+                    let controls_rect = Rect {
+                        x: (frame.size().width - PUZZLE_WIDTH) / 2,
+                        y: PUZZLE_HEIGHT + 2,
+                        width: PUZZLE_WIDTH,
+                        height: 6,
+                    };
+
+                    let block = Block::default().borders(Borders::ALL).title(Span::styled(
+                        "Controls",
+                        Style::default()
+                            .fg(Color::LightYellow)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+
+                    let text = Paragraph::new(CONTROLS).alignment(Alignment::Center);
+                    frame.render_widget(block, controls_rect);
+                    frame.render_widget(
+                        text,
+                        Rect {
+                            y: controls_rect.y + 1,
+                            ..controls_rect
+                        },
+                    );
                 })
                 .unwrap();
 
