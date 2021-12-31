@@ -1,4 +1,5 @@
 use crate::events::{Event, Events};
+use crate::puzzle::{self, Puzzle, PuzzleType};
 
 use std::io::{self, Stdout};
 use termion::{
@@ -22,7 +23,7 @@ const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
 const CONTROLS: &str =
-    "Select cell: hjkl | ← ↓ ↑ →\nStart new puzzle(Easy, Med, Hard): e, m, h\nGive up: g\nQuit: q";
+    "Select cell: hjkl | ← ↓ ↑ →\nErase Cell: space\nStart new puzzle(Easy, Med, Hard): e, m, h\nGive up: g\nQuit: q";
 
 #[derive(PartialEq)]
 pub struct Point {
@@ -60,14 +61,14 @@ type SudokuFrame<'a> =
     Frame<'a, TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<Stdout>>>>>;
 
 pub struct UI {
-    puzzle: [[Option<u8>; ROWS]; COLS],
+    puzzle: Puzzle,
     highlighted_cell: Point,
 }
 
 impl UI {
     pub fn new() -> UI {
         UI {
-            puzzle: [[None; ROWS]; COLS],
+            puzzle: Puzzle::new_puzzle(PuzzleType::Easy),
             highlighted_cell: Point { x: 0, y: 0 },
         }
     }
@@ -118,7 +119,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
     let outer_block = Block::default()
         .borders(Borders::ALL)
         .title(Span::styled(
-            "Sudoku",
+            "sudoku-rs",
             Style::default()
                 .fg(Color::LightYellow)
                 .add_modifier(Modifier::BOLD),
@@ -164,14 +165,18 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
                 _ => (Color::Gray, Color::Black),
             };
 
-            if square_to_point_cords(current_square, square_cell_counter) == ui.highlighted_cell {
-                bg_color = Color::Red;
+            let point_cords = square_to_point_cords(current_square, square_cell_counter);
+
+            if point_cords == ui.highlighted_cell {
+                bg_color = Color::Rgb(184, 255, 184);
             }
+
+            let char = ui.puzzle.puzzle[point_cords.x + 9 * point_cords.y];
 
             let block = Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().bg(bg_color).fg(bg_color));
-            let text = Paragraph::new(format!(" {}  ", square_cell_counter))
+            let text = Paragraph::new(format!(" {}  ", if char == '_' { ' ' } else { char }))
                 .alignment(Alignment::Center)
                 .style(
                     Style::default()
@@ -221,7 +226,7 @@ fn draw_info_window(frame: &mut SudokuFrame) {
 
 fn draw_controls_window(frame: &mut SudokuFrame) {
     // don't render frame if there isn't enough room
-    if frame.size().height <= PUZZLE_HEIGHT + 11 {
+    if frame.size().height <= PUZZLE_HEIGHT + 12 {
         return;
     }
 
@@ -230,7 +235,7 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
         x: (frame.size().width - PUZZLE_WIDTH) / 2,
         y: PUZZLE_HEIGHT + 5,
         width: PUZZLE_WIDTH,
-        height: 6,
+        height: 7,
     };
 
     let block = Block::default().borders(Borders::ALL).title(Span::styled(
@@ -252,7 +257,7 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
 }
 
 /*
-    Converts the puzzles strange coordinate system into more familiar x and y coords
+    Converts the puzzles strange coordinate system into more familiar x and y cords
 */
 fn square_to_point_cords(square_number: usize, cell_number: usize) -> Point {
     let col = (square_number % 3) * 3 + cell_number % 3;

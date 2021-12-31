@@ -1,5 +1,6 @@
-mod ui;
 mod events;
+mod puzzle;
+mod ui;
 use ui::UI;
 
 fn main() {
