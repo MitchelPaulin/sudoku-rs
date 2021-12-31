@@ -73,10 +73,10 @@ pub struct UI {
 impl UI {
     pub fn new() -> UI {
         let new_puzzle = Puzzle::new_puzzle(PuzzleType::Easy);
-        let displayed_puzzle = new_puzzle.puzzle.clone();
+        let displayed_puzzle = new_puzzle.puzzle;
         UI {
             puzzle: new_puzzle,
-            displayed_puzzle: displayed_puzzle,
+            displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
         }
     }
@@ -95,7 +95,7 @@ impl UI {
         loop {
             terminal
                 .draw(|frame| {
-                    if draw_puzzle_window(frame, &self) {
+                    if draw_puzzle_window(frame, self) {
                         draw_info_window(frame);
                         draw_controls_window(frame);
                     }
@@ -191,11 +191,11 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
 
             let point_cords = square_to_point_cords(current_square, square_cell_counter);
 
-            let row = current_square - (current_square % 9);
-
-            // check for any duplicates in the same square
-            let mut counter = 0;
+            let mut duplicate_found = false;
             if ui.displayed_puzzle[point_cords.to_board_cords()] != '_' {
+                let mut counter = 0;
+                // check for any duplicates in the same square
+                let row = current_square - (current_square % 9);
                 for i in row..row + 9 {
                     let current_cord = square_to_point_cords(current_square, i);
                     if ui.displayed_puzzle[point_cords.to_board_cords()]
@@ -204,11 +204,45 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
                         counter += 1;
                     }
                 }
+
+                duplicate_found = counter > 1;
+
+                counter = 0;
+                //check for any duplication in the same col
+                for i in 0..9 {
+                    let p = Point {
+                        x: i,
+                        y: point_cords.y,
+                    };
+                    if ui.displayed_puzzle[p.to_board_cords()]
+                        == ui.displayed_puzzle[point_cords.to_board_cords()]
+                    {
+                        counter += 1;
+                    }
+                }
+
+                duplicate_found |= counter > 1;
+
+                counter = 0;
+                //check for any duplication in the same row
+                for i in 0..9 {
+                    let p = Point {
+                        x: point_cords.x,
+                        y: i,
+                    };
+                    if ui.displayed_puzzle[p.to_board_cords()]
+                        == ui.displayed_puzzle[point_cords.to_board_cords()]
+                    {
+                        counter += 1;
+                    }
+                }
+
+                duplicate_found |= counter > 1;
             }
 
             if point_cords == ui.highlighted_cell {
                 bg_color = Color::Rgb(184, 255, 184);
-            } else if counter >= 2 {
+            } else if duplicate_found {
                 bg_color = Color::LightRed;
             }
 

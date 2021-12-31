@@ -1,4 +1,4 @@
-const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [((
+const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [(
     [
         '7', '2', '3', '_', '_', '_', '1', '5', '9', '6', '_', '_', '3', '_', '2', '_', '_', '8',
         '8', '_', '_', '_', '1', '_', '_', '_', '2', '_', '7', '_', '6', '5', '4', '_', '2', '_',
@@ -13,7 +13,7 @@ const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [((
         '5', '6', '1', '4', '7', '9', '2', '8', '3', '4', '8', '7', '1', '2', '3', '5', '9', '6',
         '9', '3', '2', '5', '6', '8', '7', '1', '4',
     ],
-))];
+)];
 
 pub type SudokuPuzzle = [char; 81];
 
@@ -28,7 +28,7 @@ pub struct Puzzle {
 }
 
 impl Puzzle {
-    pub fn new_puzzle(difficulty: PuzzleType) -> Puzzle {
+    pub fn new_puzzle(_difficulty: PuzzleType) -> Puzzle {
         Puzzle {
             puzzle: PUZZLES_EASY[0].0,
             solution: PUZZLES_EASY[0].1,
