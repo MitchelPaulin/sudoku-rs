@@ -1,9 +1,7 @@
 use crate::events::{Event, Events};
 
 use std::io;
-use termion::{
-    event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen,
-};
+use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -15,6 +13,8 @@ use tui::{
 
 const ROWS: usize = 9;
 const COLS: usize = 9;
+const PUZZLE_WIDTH: u16 = 54;
+const PUZZLE_HEIGHT: u16 = 27;
 
 #[derive(PartialEq)]
 pub struct Point {
@@ -91,10 +91,10 @@ impl UI {
 
                     // draw the sudoku table
                     let rect = Rect {
-                        x: frame.size().x + 2,
+                        x: (frame.size().width - PUZZLE_WIDTH) / 2,
                         y: frame.size().y + 2,
-                        width: 54,
-                        height: 27,
+                        width: PUZZLE_WIDTH,
+                        height: PUZZLE_HEIGHT,
                     };
                     let large_table_cells = split_rect_into_three_by_three_square(rect);
                     for square in large_table_cells {
@@ -157,7 +157,6 @@ impl UI {
     Converts the puzzles strange coordinate system into more familiar x and y coords
 */
 fn square_to_point_cords(square_number: usize, cell_number: usize) -> Point {
-
     let col = (square_number % 3) * 3 + cell_number % 3;
     let row = (square_number / 3) * 3 + cell_number / 3;
 
