@@ -1,14 +1,19 @@
 use crate::events::{Event, Events};
 
-use std::io;
-use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
+use std::io::{self, Stdout};
+use termion::{
+    event::Key,
+    input::MouseTerminal,
+    raw::{IntoRawMode, RawTerminal},
+    screen::AlternateScreen,
+};
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, BorderType, Borders, Paragraph},
-    Terminal,
+    Frame, Terminal,
 };
 
 const ROWS: usize = 9;
@@ -51,6 +56,9 @@ impl Point {
     }
 }
 
+type SudokuFrame<'a> =
+    Frame<'a, TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<Stdout>>>>>;
+
 pub struct UI {
     puzzle: [[Option<u8>; ROWS]; COLS],
     highlighted_cell: Point,
@@ -76,93 +84,12 @@ impl UI {
         let events = Events::new();
 
         loop {
-            let mut current_square = 0;
             terminal
                 .draw(|frame| {
-                    let terminal_rect = frame.size();
-
-                    let outer_block = Block::default()
-                        .borders(Borders::ALL)
-                        .title(Span::styled(
-                            "Sudoku",
-                            Style::default()
-                                .fg(Color::LightYellow)
-                                .add_modifier(Modifier::BOLD),
-                        ))
-                        .border_type(BorderType::Rounded);
-                    frame.render_widget(outer_block, terminal_rect);
-
-                    // draw the sudoku table
-                    let rect = Rect {
-                        x: (frame.size().width - PUZZLE_WIDTH) / 2,
-                        y: frame.size().y + 2,
-                        width: PUZZLE_WIDTH,
-                        height: PUZZLE_HEIGHT,
-                    };
-                    let large_table_cells = split_rect_into_three_by_three_square(rect);
-                    for square in large_table_cells {
-                        let mut square_cell_counter = 0;
-                        let cells = split_rect_into_three_by_three_square(square);
-                        for cell in cells {
-                            let (mut bg_color, text_color) = match current_square % 2 {
-                                0 => (Color::White, Color::Black),
-                                _ => (Color::Gray, Color::Black),
-                            };
-
-                            if square_to_point_cords(current_square, square_cell_counter)
-                                == self.highlighted_cell
-                            {
-                                bg_color = Color::Red;
-                            }
-
-                            let block = Block::default()
-                                .borders(Borders::ALL)
-                                .border_style(Style::default().bg(bg_color).fg(bg_color));
-                            let text = Paragraph::new(format!(" {}  ", square_cell_counter))
-                                .alignment(Alignment::Center)
-                                .style(
-                                    Style::default()
-                                        .bg(bg_color)
-                                        .fg(text_color)
-                                        .add_modifier(Modifier::BOLD),
-                                );
-                            let text_rect = Rect {
-                                x: cell.x + 1,
-                                y: cell.y + 1,
-                                width: 4,
-                                height: 1,
-                            };
-                            frame.render_widget(block, cell);
-                            frame.render_widget(text, text_rect);
-                            square_cell_counter += 1;
-                        }
-                        current_square += 1;
+                    if draw_puzzle_window(frame, &self) {
+                        draw_info_window(frame);
+                        draw_controls_window(frame);
                     }
-
-                    //draw the controls window
-                    let controls_rect = Rect {
-                        x: (frame.size().width - PUZZLE_WIDTH) / 2,
-                        y: PUZZLE_HEIGHT + 2,
-                        width: PUZZLE_WIDTH,
-                        height: 6,
-                    };
-
-                    let block = Block::default().borders(Borders::ALL).title(Span::styled(
-                        "Controls",
-                        Style::default()
-                            .fg(Color::LightYellow)
-                            .add_modifier(Modifier::BOLD),
-                    ));
-
-                    let text = Paragraph::new(CONTROLS).alignment(Alignment::Center);
-                    frame.render_widget(block, controls_rect);
-                    frame.render_widget(
-                        text,
-                        Rect {
-                            y: controls_rect.y + 1,
-                            ..controls_rect
-                        },
-                    );
                 })
                 .unwrap();
 
@@ -179,6 +106,149 @@ impl UI {
             }
         }
     }
+}
+
+/*
+    Draw the puzzle window, return if the window could be drawn
+*/
+fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
+    let terminal_rect = frame.size();
+    let mut current_square = 0;
+
+    let outer_block = Block::default()
+        .borders(Borders::ALL)
+        .title(Span::styled(
+            "Sudoku",
+            Style::default()
+                .fg(Color::LightYellow)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .border_type(BorderType::Rounded);
+    frame.render_widget(outer_block, terminal_rect);
+
+    // the window is too small to even show the warning
+    if terminal_rect.height < 2 || terminal_rect.width < 25 {
+        return false;
+    }
+
+    // if the window is too small, show warning
+    if terminal_rect.height < PUZZLE_HEIGHT + 2 || terminal_rect.width < PUZZLE_WIDTH + 2 {
+        let text = Paragraph::new("Window is too small\nPlease expand window")
+            .alignment(Alignment::Center);
+        frame.render_widget(
+            text,
+            Rect {
+                y: 1,
+                x: 3,
+                width: 20,
+                height: 2,
+            },
+        );
+        return false;
+    }
+
+    // draw the sudoku table
+    let rect = Rect {
+        x: (frame.size().width - PUZZLE_WIDTH) / 2,
+        y: frame.size().y + 2,
+        width: PUZZLE_WIDTH,
+        height: PUZZLE_HEIGHT,
+    };
+    let large_table_cells = split_rect_into_three_by_three_square(rect);
+    for square in large_table_cells {
+        let mut square_cell_counter = 0;
+        let cells = split_rect_into_three_by_three_square(square);
+        for cell in cells {
+            let (mut bg_color, text_color) = match current_square % 2 {
+                0 => (Color::White, Color::Black),
+                _ => (Color::Gray, Color::Black),
+            };
+
+            if square_to_point_cords(current_square, square_cell_counter) == ui.highlighted_cell {
+                bg_color = Color::Red;
+            }
+
+            let block = Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().bg(bg_color).fg(bg_color));
+            let text = Paragraph::new(format!(" {}  ", square_cell_counter))
+                .alignment(Alignment::Center)
+                .style(
+                    Style::default()
+                        .bg(bg_color)
+                        .fg(text_color)
+                        .add_modifier(Modifier::BOLD),
+                );
+            let text_rect = Rect {
+                x: cell.x + 1,
+                y: cell.y + 1,
+                width: 4,
+                height: 1,
+            };
+            frame.render_widget(block, cell);
+            frame.render_widget(text, text_rect);
+            square_cell_counter += 1;
+        }
+        current_square += 1;
+    }
+
+    true
+}
+
+fn draw_info_window(frame: &mut SudokuFrame) {
+    // don't render frame if there isn't enough room
+    if frame.size().height <= PUZZLE_HEIGHT + 4 {
+        return;
+    }
+
+    // draw the score window
+    let score_window = Rect {
+        x: (frame.size().width - PUZZLE_WIDTH) / 2,
+        y: PUZZLE_HEIGHT + 2,
+        width: PUZZLE_WIDTH,
+        height: 3,
+    };
+
+    let score_block = Block::default().borders(Borders::ALL).title(Span::styled(
+        "Info",
+        Style::default()
+            .fg(Color::LightYellow)
+            .add_modifier(Modifier::BOLD),
+    ));
+
+    frame.render_widget(score_block, score_window);
+}
+
+fn draw_controls_window(frame: &mut SudokuFrame) {
+    // don't render frame if there isn't enough room
+    if frame.size().height <= PUZZLE_HEIGHT + 11 {
+        return;
+    }
+
+    //draw the controls window
+    let controls_rect = Rect {
+        x: (frame.size().width - PUZZLE_WIDTH) / 2,
+        y: PUZZLE_HEIGHT + 5,
+        width: PUZZLE_WIDTH,
+        height: 6,
+    };
+
+    let block = Block::default().borders(Borders::ALL).title(Span::styled(
+        "Controls",
+        Style::default()
+            .fg(Color::LightYellow)
+            .add_modifier(Modifier::BOLD),
+    ));
+
+    let text = Paragraph::new(CONTROLS).alignment(Alignment::Center);
+    frame.render_widget(block, controls_rect);
+    frame.render_widget(
+        text,
+        Rect {
+            y: controls_rect.y + 1,
+            ..controls_rect
+        },
+    );
 }
 
 /*
