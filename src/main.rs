@@ -1,4 +1,5 @@
 mod ui;
+mod events;
 use ui::UI;
 
 fn main() {

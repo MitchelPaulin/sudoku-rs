@@ -1,6 +1,9 @@
+use crate::events::{Event, Events};
 use std::fmt::format;
 use std::io;
-use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen, style::Bold};
+use termion::{
+    event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen, style::Bold,
+};
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -13,14 +16,48 @@ use tui::{
 const ROWS: usize = 9;
 const COLS: usize = 9;
 
+#[derive(PartialEq)]
+pub struct Point {
+    x: usize,
+    y: usize,
+}
+
+impl Point {
+    pub fn left(&mut self) {
+        if self.x > 0 {
+            self.x -= 1;
+        }
+    }
+
+    pub fn right(&mut self) {
+        if self.x != COLS - 1 {
+            self.x += 1;
+        }
+    }
+
+    pub fn up(&mut self) {
+        if self.y > 0 {
+            self.y -= 1;
+        }
+    }
+
+    pub fn down(&mut self) {
+        if self.y != ROWS - 1 {
+            self.y += 1;
+        }
+    }
+}
+
 pub struct UI {
     puzzle: [[Option<u8>; ROWS]; COLS],
+    highlighted_cell: Point,
 }
 
 impl UI {
     pub fn new() -> UI {
         UI {
             puzzle: [[None; ROWS]; COLS],
+            highlighted_cell: Point { x: 0, y: 0 },
         }
     }
 
@@ -32,10 +69,11 @@ impl UI {
         let backend = TermionBackend::new(stdout);
         let mut terminal = Terminal::new(backend).unwrap();
 
-        // Setup event handlers - TODO
-        //let events = Events::new();
+        //Setup event handlers
+        let events = Events::new();
+
         loop {
-            let mut i = 0;
+            let mut current_square = 0;
             terminal
                 .draw(|frame| {
                     let terminal_rect = frame.size();
@@ -60,19 +98,31 @@ impl UI {
                     };
                     let large_table_cells = split_rect_into_three_by_three_square(rect);
                     for square in large_table_cells {
+                        let mut square_cell_counter = 0;
                         let cells = split_rect_into_three_by_three_square(square);
                         for cell in cells {
-                            let (bg_color, text_color) = match i % 2 {
+                            let (mut bg_color, text_color) = match current_square % 2 {
                                 0 => (Color::White, Color::Black),
                                 _ => (Color::Gray, Color::Black),
                             };
 
+                            if square_to_point_cords(current_square, square_cell_counter)
+                                == self.highlighted_cell
+                            {
+                                bg_color = Color::Red;
+                            }
+
                             let block = Block::default()
                                 .borders(Borders::ALL)
                                 .border_style(Style::default().bg(bg_color).fg(bg_color));
-                            let text = Paragraph::new(format!(" {}  ", i))
+                            let text = Paragraph::new(format!(" {}  ", square_cell_counter))
                                 .alignment(Alignment::Center)
-                                .style(Style::default().bg(bg_color).fg(text_color).add_modifier(Modifier::BOLD));
+                                .style(
+                                    Style::default()
+                                        .bg(bg_color)
+                                        .fg(text_color)
+                                        .add_modifier(Modifier::BOLD),
+                                );
                             let text_rect = Rect {
                                 x: cell.x + 1,
                                 y: cell.y + 1,
@@ -81,13 +131,37 @@ impl UI {
                             };
                             frame.render_widget(block, cell);
                             frame.render_widget(text, text_rect);
+                            square_cell_counter += 1;
                         }
-                        i += 1;
+                        current_square += 1;
                     }
                 })
                 .unwrap();
+
+            if let Event::Input(key) = events.next().unwrap() {
+                match key {
+                    // movement using arrow keys or vim movement keys
+                    Key::Up | Key::Char('k') => self.highlighted_cell.up(),
+                    Key::Down | Key::Char('j') => self.highlighted_cell.down(),
+                    Key::Left | Key::Char('h') => self.highlighted_cell.left(),
+                    Key::Right | Key::Char('l') => self.highlighted_cell.right(),
+                    Key::Char('q') => break,
+                    _ => {}
+                }
+            }
         }
     }
+}
+
+/*
+    Converts the puzzles strange coordinate system into more familiar x and y coords
+*/
+fn square_to_point_cords(square_number: usize, cell_number: usize) -> Point {
+
+    let col = (square_number % 3) * 3 + cell_number % 3;
+    let row = (square_number / 3) * 3 + cell_number / 3;
+
+    Point { x: col, y: row }
 }
 
 // Helper function to take a rect and split it equally into a 3x3 rect
