@@ -1,15 +1,15 @@
 use crate::events::{Event, Events};
-use std::fmt::format;
+
 use std::io;
 use termion::{
-    event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen, style::Bold,
+    event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen,
 };
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, Gauge, List, ListItem, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Borders, Paragraph},
     Terminal,
 };
 
