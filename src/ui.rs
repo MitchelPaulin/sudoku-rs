@@ -1,5 +1,5 @@
 use crate::events::{Event, Events, TICK_RATE_MS};
-use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle, EMPTY_SPACE};
+use crate::puzzle::{Difficulty, Puzzle, SudokuPuzzle, EMPTY_SPACE};
 use crate::themes;
 
 use std::io::{self, Stdout};
@@ -23,7 +23,7 @@ const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
 const CONTROLS: &str =
-    "Select cell: hjkl | ← ↓ ↑ →\nErase Cell: space\nStart new puzzle(Easy, Med, Hard): e, m, h\nGive up: g\nQuit: q";
+    "Select cell: hjkl | ← ↓ ↑ →\nErase cell: space\nStart new puzzle(Easy, Hard): z, x\nGive up: g\nQuit: q";
 
 #[derive(PartialEq)]
 pub struct Point {
@@ -76,7 +76,7 @@ pub struct UI {
 
 impl UI {
     pub fn new() -> UI {
-        let new_puzzle = Puzzle::new_puzzle(PuzzleType::Easy);
+        let new_puzzle = Puzzle::new_puzzle(Difficulty::Easy);
         let displayed_puzzle = new_puzzle.puzzle;
         UI {
             puzzle: new_puzzle,
@@ -126,6 +126,8 @@ impl UI {
                         Key::Char('8') => self.update_displayed_board('8'),
                         Key::Char('9') => self.update_displayed_board('9'),
                         Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
+                        Key::Char('z') => self.new_game(Difficulty::Easy),
+                        Key::Char('x') => self.new_game(Difficulty::Hard),
                         Key::Char('q') | Key::Ctrl('c') => break,
                         _ => {}
                     }
@@ -133,6 +135,14 @@ impl UI {
                 Event::Tick => self.time_in_ms += TICK_RATE_MS,
             }
         }
+    }
+
+    fn new_game(&mut self, difficulty: Difficulty) {
+        self.time_in_ms = 0;
+        self.puzzle = Puzzle::new_puzzle(difficulty);
+        self.displayed_puzzle = self.puzzle.puzzle;
+
+        // cell counts will be updated automatically on the next frame render
     }
 
     fn update_displayed_board(&mut self, val: char) {
@@ -335,55 +345,56 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
     Determine if the given cell should display as an error
 */
 fn cell_error(point_cords: &Point, current_square: usize, ui: &UI) -> bool {
-    let mut duplicate_found = false;
-    if ui.displayed_puzzle[point_cords.as_board_cords()] != EMPTY_SPACE {
-        let mut counter = 0;
-        // check for any duplicates in the same square
-        let row = current_square - (current_square % BOARD_LENGTH);
-        for i in row..row + BOARD_LENGTH {
-            let current_cord = square_to_point_cords(current_square, i);
-            if ui.displayed_puzzle[point_cords.as_board_cords()]
-                == ui.displayed_puzzle[current_cord.as_board_cords()]
-            {
-                counter += 1;
-            }
-        }
-
-        duplicate_found = counter > 1;
-
-        counter = 0;
-        //check for any duplication in the same col
-        for i in 0..BOARD_LENGTH {
-            let p = Point {
-                x: i,
-                y: point_cords.y,
-            };
-            if ui.displayed_puzzle[p.as_board_cords()]
-                == ui.displayed_puzzle[point_cords.as_board_cords()]
-            {
-                counter += 1;
-            }
-        }
-
-        duplicate_found |= counter > 1;
-
-        counter = 0;
-        //check for any duplication in the same row
-        for i in 0..BOARD_LENGTH {
-            let p = Point {
-                x: point_cords.x,
-                y: i,
-            };
-            if ui.displayed_puzzle[p.as_board_cords()]
-                == ui.displayed_puzzle[point_cords.as_board_cords()]
-            {
-                counter += 1;
-            }
-        }
-
-        duplicate_found |= counter > 1;
+    if ui.displayed_puzzle[point_cords.as_board_cords()] == EMPTY_SPACE {
+        return false;
     }
-    duplicate_found
+    let mut counter = 0;
+    // check for any duplicates in the same square
+    let row = current_square - (current_square % BOARD_LENGTH);
+    for i in row..row + BOARD_LENGTH {
+        let current_cord = square_to_point_cords(current_square, i);
+        if ui.displayed_puzzle[point_cords.as_board_cords()]
+            == ui.displayed_puzzle[current_cord.as_board_cords()]
+        {
+            counter += 1;
+        }
+    }
+
+    let mut duplicate_found = counter > 1;
+
+    counter = 0;
+    //check for any duplicates in the same col
+    for i in 0..BOARD_LENGTH {
+        let p = Point {
+            x: i,
+            y: point_cords.y,
+        };
+        if ui.displayed_puzzle[p.as_board_cords()]
+            == ui.displayed_puzzle[point_cords.as_board_cords()]
+        {
+            counter += 1;
+        }
+    }
+
+    duplicate_found |= counter > 1;
+
+    counter = 0;
+    //check for any duplicates in the same row
+    for i in 0..BOARD_LENGTH {
+        let p = Point {
+            x: point_cords.x,
+            y: i,
+        };
+        if ui.displayed_puzzle[p.as_board_cords()]
+            == ui.displayed_puzzle[point_cords.as_board_cords()]
+        {
+            counter += 1;
+        }
+    }
+
+    duplicate_found |= counter > 1;
+
+    return duplicate_found;
 }
 
 /*

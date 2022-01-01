@@ -1,5 +1,39 @@
 use std::fmt::{self};
 
+pub const EMPTY_SPACE: char = '_';
+
+pub type SudokuPuzzle = [char; 81];
+
+pub enum Difficulty {
+    Easy,
+    Hard,
+}
+
+impl fmt::Display for Difficulty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Difficulty::Easy => write!(f, "Easy"),
+            Difficulty::Hard => write!(f, "Hard"),
+        }
+    }
+}
+
+pub struct Puzzle {
+    pub puzzle: SudokuPuzzle,
+    pub solution: SudokuPuzzle,
+    pub difficulty: Difficulty,
+}
+
+impl Puzzle {
+    pub fn new_puzzle(difficulty: Difficulty) -> Puzzle {
+        Puzzle {
+            puzzle: PUZZLES_EASY[0].0,
+            solution: PUZZLES_EASY[0].1,
+            difficulty,
+        }
+    }
+}
+
 const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [(
     [
         '7', '2', '3', '_', '_', '_', '1', '5', '9', '6', '_', '_', '3', '_', '2', '_', '_', '8',
@@ -16,40 +50,6 @@ const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [(
         '9', '3', '2', '5', '6', '8', '7', '1', '4',
     ],
 )];
-
-pub const EMPTY_SPACE: char = '_';
-
-pub type SudokuPuzzle = [char; 81];
-
-pub enum PuzzleType {
-    Easy,
-    Hard,
-}
-
-impl fmt::Display for PuzzleType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PuzzleType::Easy => write!(f, "Easy"),
-            PuzzleType::Hard => write!(f, "Hard"),
-        }
-    }
-}
-
-pub struct Puzzle {
-    pub puzzle: SudokuPuzzle,
-    pub solution: SudokuPuzzle,
-    pub difficulty: PuzzleType,
-}
-
-impl Puzzle {
-    pub fn new_puzzle(difficulty: PuzzleType) -> Puzzle {
-        Puzzle {
-            puzzle: PUZZLES_EASY[0].0,
-            solution: PUZZLES_EASY[0].1,
-            difficulty,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
