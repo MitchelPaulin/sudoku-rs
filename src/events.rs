@@ -1,6 +1,8 @@
 use std::{io, sync::mpsc, thread, time::Duration};
 use termion::{event::Key, input::TermRead};
 
+pub const TICK_RATE_MS: u64 = 250;
+
 pub enum Event<I> {
     Input(I),
     Tick,
@@ -22,7 +24,7 @@ pub struct Config {
 impl Config {
     fn new() -> Self {
         Self {
-            tick_rate: Duration::from_millis(250),
+            tick_rate: Duration::from_millis(TICK_RATE_MS),
         }
     }
 }

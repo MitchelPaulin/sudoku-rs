@@ -1,4 +1,4 @@
-use crate::events::{Event, Events};
+use crate::events::{Event, Events, TICK_RATE_MS};
 use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle, EMPTY_SPACE};
 use crate::themes;
 
@@ -71,6 +71,7 @@ pub struct UI {
     displayed_puzzle: SudokuPuzzle,
     highlighted_cell: Point,
     cell_counts: [u8; BOARD_LENGTH],
+    time_in_ms: u64,
 }
 
 impl UI {
@@ -82,6 +83,7 @@ impl UI {
             displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
             cell_counts: [0; BOARD_LENGTH],
+            time_in_ms: 0,
         }
     }
 
@@ -100,32 +102,35 @@ impl UI {
             terminal
                 .draw(|frame| {
                     if draw_puzzle_window(frame, self) {
-                        draw_info_window(frame, &self.cell_counts);
+                        draw_info_window(frame, self);
                         draw_controls_window(frame);
                     }
                 })
                 .unwrap();
 
-            if let Event::Input(key) = events.next().unwrap() {
-                match key {
-                    // movement using arrow keys or vim movement keys
-                    Key::Up | Key::Char('k') => self.highlighted_cell.up(),
-                    Key::Down | Key::Char('j') => self.highlighted_cell.down(),
-                    Key::Left | Key::Char('h') => self.highlighted_cell.left(),
-                    Key::Right | Key::Char('l') => self.highlighted_cell.right(),
-                    Key::Char('1') => self.update_displayed_board('1'),
-                    Key::Char('2') => self.update_displayed_board('2'),
-                    Key::Char('3') => self.update_displayed_board('3'),
-                    Key::Char('4') => self.update_displayed_board('4'),
-                    Key::Char('5') => self.update_displayed_board('5'),
-                    Key::Char('6') => self.update_displayed_board('6'),
-                    Key::Char('7') => self.update_displayed_board('7'),
-                    Key::Char('8') => self.update_displayed_board('8'),
-                    Key::Char('9') => self.update_displayed_board('9'),
-                    Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
-                    Key::Char('q') | Key::Ctrl('c') => break,
-                    _ => {}
+            match events.next().unwrap() {
+                Event::Input(key) => {
+                    match key {
+                        // movement using arrow keys or vim movement keys
+                        Key::Up | Key::Char('k') => self.highlighted_cell.up(),
+                        Key::Down | Key::Char('j') => self.highlighted_cell.down(),
+                        Key::Left | Key::Char('h') => self.highlighted_cell.left(),
+                        Key::Right | Key::Char('l') => self.highlighted_cell.right(),
+                        Key::Char('1') => self.update_displayed_board('1'),
+                        Key::Char('2') => self.update_displayed_board('2'),
+                        Key::Char('3') => self.update_displayed_board('3'),
+                        Key::Char('4') => self.update_displayed_board('4'),
+                        Key::Char('5') => self.update_displayed_board('5'),
+                        Key::Char('6') => self.update_displayed_board('6'),
+                        Key::Char('7') => self.update_displayed_board('7'),
+                        Key::Char('8') => self.update_displayed_board('8'),
+                        Key::Char('9') => self.update_displayed_board('9'),
+                        Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
+                        Key::Char('q') | Key::Ctrl('c') => break,
+                        _ => {}
+                    }
                 }
+                Event::Tick => self.time_in_ms += TICK_RATE_MS,
             }
         }
     }
@@ -249,7 +254,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
     true
 }
 
-fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
+fn draw_info_window(frame: &mut SudokuFrame, ui: &UI) {
     // don't render frame if there isn't enough room
     if frame.size().height <= PUZZLE_HEIGHT + 4 {
         return;
@@ -260,7 +265,7 @@ fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
         x: (frame.size().width - PUZZLE_WIDTH) / 2,
         y: PUZZLE_HEIGHT + 2,
         width: PUZZLE_WIDTH,
-        height: 3,
+        height: 4,
     };
 
     let score_block = Block::default().borders(Borders::ALL).title(Span::styled(
@@ -270,12 +275,19 @@ fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
             .add_modifier(Modifier::BOLD),
     ));
 
-    let mut counts = "".to_string();
-    for (i, val) in cell_count.iter().enumerate() {
-        counts = format!("{} {}:{}", counts, i + 1, val);
+    let mut info_str = "".to_string();
+    for (i, val) in ui.cell_counts.iter().enumerate() {
+        info_str = format!("{} {}:{}", info_str, i + 1, val);
     }
 
-    let text = Paragraph::new(counts).alignment(Alignment::Center);
+    info_str = format!(
+        "{}\nDifficulty: {}               Time: {}s",
+        info_str,
+        ui.puzzle.difficulty,
+        ui.time_in_ms / 1000
+    );
+
+    let text = Paragraph::new(info_str).alignment(Alignment::Center);
     frame.render_widget(
         text,
         Rect {

@@ -1,3 +1,5 @@
+use std::fmt::{self};
+
 const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [(
     [
         '7', '2', '3', '_', '_', '_', '1', '5', '9', '6', '_', '_', '3', '_', '2', '_', '_', '8',
@@ -24,16 +26,27 @@ pub enum PuzzleType {
     Hard,
 }
 
+impl fmt::Display for PuzzleType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PuzzleType::Easy => write!(f, "Easy"),
+            PuzzleType::Hard => write!(f, "Hard"),
+        }
+    }
+}
+
 pub struct Puzzle {
     pub puzzle: SudokuPuzzle,
     pub solution: SudokuPuzzle,
+    pub difficulty: PuzzleType,
 }
 
 impl Puzzle {
-    pub fn new_puzzle(_difficulty: PuzzleType) -> Puzzle {
+    pub fn new_puzzle(difficulty: PuzzleType) -> Puzzle {
         Puzzle {
             puzzle: PUZZLES_EASY[0].0,
             solution: PUZZLES_EASY[0].1,
+            difficulty,
         }
     }
 }
