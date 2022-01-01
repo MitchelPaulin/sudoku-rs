@@ -15,6 +15,8 @@ const PUZZLES_EASY: [(SudokuPuzzle, SudokuPuzzle); 1] = [(
     ],
 )];
 
+pub const EMPTY_SPACE: char = '_';
+
 pub type SudokuPuzzle = [char; 81];
 
 pub enum PuzzleType {

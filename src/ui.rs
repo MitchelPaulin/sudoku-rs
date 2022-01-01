@@ -1,5 +1,5 @@
 use crate::events::{Event, Events};
-use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle};
+use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle, EMPTY_SPACE};
 use crate::themes;
 
 use std::io::{self, Stdout};
@@ -18,8 +18,7 @@ use tui::{
     Frame, Terminal,
 };
 
-const ROWS: usize = 9;
-const COLS: usize = 9;
+const BOARD_LENGTH: usize = 9;
 const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
@@ -40,7 +39,7 @@ impl Point {
     }
 
     pub fn right(&mut self) {
-        if self.x != COLS - 1 {
+        if self.x != BOARD_LENGTH - 1 {
             self.x += 1;
         }
     }
@@ -52,13 +51,13 @@ impl Point {
     }
 
     pub fn down(&mut self) {
-        if self.y != ROWS - 1 {
+        if self.y != BOARD_LENGTH - 1 {
             self.y += 1;
         }
     }
 
-    pub fn to_board_cords(&self) -> usize {
-        self.x + ROWS * self.y
+    pub fn as_board_cords(&self) -> usize {
+        self.x + BOARD_LENGTH * self.y
     }
 }
 
@@ -71,7 +70,7 @@ pub struct UI {
     puzzle: Puzzle,
     displayed_puzzle: SudokuPuzzle,
     highlighted_cell: Point,
-    cell_counts: [u8; 9],
+    cell_counts: [u8; BOARD_LENGTH],
 }
 
 impl UI {
@@ -82,7 +81,7 @@ impl UI {
             puzzle: new_puzzle,
             displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
-            cell_counts: [0; 9],
+            cell_counts: [0; BOARD_LENGTH],
         }
     }
 
@@ -123,7 +122,7 @@ impl UI {
                     Key::Char('7') => self.update_displayed_board('7'),
                     Key::Char('8') => self.update_displayed_board('8'),
                     Key::Char('9') => self.update_displayed_board('9'),
-                    Key::Char(' ') => self.update_displayed_board('_'),
+                    Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
                     Key::Char('q') | Key::Ctrl('c') => break,
                     _ => {}
                 }
@@ -132,8 +131,8 @@ impl UI {
     }
 
     fn update_displayed_board(&mut self, val: char) {
-        if self.puzzle.puzzle[self.highlighted_cell.to_board_cords()] == '_' {
-            self.displayed_puzzle[self.highlighted_cell.to_board_cords()] = val;
+        if self.puzzle.puzzle[self.highlighted_cell.as_board_cords()] == EMPTY_SPACE {
+            self.displayed_puzzle[self.highlighted_cell.as_board_cords()] = val;
         }
     }
 }
@@ -143,8 +142,7 @@ impl UI {
 */
 fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
     let terminal_rect = frame.size();
-    let mut current_square = 0;
-    ui.cell_counts = [0; 9];
+    ui.cell_counts = [0; BOARD_LENGTH];
 
     let outer_block = Block::default()
         .borders(Borders::ALL)
@@ -186,17 +184,15 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
         height: PUZZLE_HEIGHT,
     };
     let large_table_cells = split_rect_into_three_by_three_square(rect);
-    for square in large_table_cells {
-        let mut square_cell_counter = 0;
+    for (current_square, square) in large_table_cells.into_iter().enumerate() {
         let cells = split_rect_into_three_by_three_square(square);
-        for cell in cells {
+        for (square_cell_counter, cell) in cells.into_iter().enumerate() {
             let point_cords = square_to_point_cords(current_square, square_cell_counter);
 
             // update cell counts
-            match ui.displayed_puzzle[point_cords.to_board_cords()].to_digit(10) {
-                Some(num) => ui.cell_counts[num as usize - 1] += 1,
-                None => {}
-            };
+            if let Some(num) = ui.displayed_puzzle[point_cords.as_board_cords()].to_digit(10) {
+                ui.cell_counts[num as usize - 1] += 1
+            }
 
             let (mut bg_color, text_color, locked_square_color) = match current_square % 2 {
                 0 => (
@@ -211,63 +207,14 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
                 ),
             };
 
-            let mut duplicate_found = false;
-            if ui.displayed_puzzle[point_cords.to_board_cords()] != '_' {
-                let mut counter = 0;
-                // check for any duplicates in the same square
-                let row = current_square - (current_square % 9);
-                for i in row..row + 9 {
-                    let current_cord = square_to_point_cords(current_square, i);
-                    if ui.displayed_puzzle[point_cords.to_board_cords()]
-                        == ui.displayed_puzzle[current_cord.to_board_cords()]
-                    {
-                        counter += 1;
-                    }
-                }
-
-                duplicate_found = counter > 1;
-
-                counter = 0;
-                //check for any duplication in the same col
-                for i in 0..9 {
-                    let p = Point {
-                        x: i,
-                        y: point_cords.y,
-                    };
-                    if ui.displayed_puzzle[p.to_board_cords()]
-                        == ui.displayed_puzzle[point_cords.to_board_cords()]
-                    {
-                        counter += 1;
-                    }
-                }
-
-                duplicate_found |= counter > 1;
-
-                counter = 0;
-                //check for any duplication in the same row
-                for i in 0..9 {
-                    let p = Point {
-                        x: point_cords.x,
-                        y: i,
-                    };
-                    if ui.displayed_puzzle[p.to_board_cords()]
-                        == ui.displayed_puzzle[point_cords.to_board_cords()]
-                    {
-                        counter += 1;
-                    }
-                }
-
-                duplicate_found |= counter > 1;
-            }
-
             if point_cords == ui.highlighted_cell {
                 bg_color = BOARD_THEME.highlighted_color;
-            } else if duplicate_found {
+            } else if cell_error(&point_cords, current_square, ui) {
                 bg_color = BOARD_THEME.error_color;
             }
 
-            let char = ui.displayed_puzzle[point_cords.to_board_cords()];
-            let fg_color = if ui.puzzle.puzzle[point_cords.to_board_cords()] != '_' {
+            let char = ui.displayed_puzzle[point_cords.as_board_cords()];
+            let fg_color = if ui.puzzle.puzzle[point_cords.as_board_cords()] != EMPTY_SPACE {
                 locked_square_color
             } else {
                 bg_color
@@ -277,14 +224,17 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
                 .borders(Borders::ALL)
                 .border_style(Style::default().bg(bg_color).fg(fg_color));
 
-            let text = Paragraph::new(format!(" {}  ", if char == '_' { ' ' } else { char }))
-                .alignment(Alignment::Center)
-                .style(
-                    Style::default()
-                        .bg(bg_color)
-                        .fg(text_color)
-                        .add_modifier(Modifier::BOLD),
-                );
+            let text = Paragraph::new(format!(
+                " {}  ",
+                if char == EMPTY_SPACE { ' ' } else { char }
+            ))
+            .alignment(Alignment::Center)
+            .style(
+                Style::default()
+                    .bg(bg_color)
+                    .fg(text_color)
+                    .add_modifier(Modifier::BOLD),
+            );
             let text_rect = Rect {
                 x: cell.x + 1,
                 y: cell.y + 1,
@@ -293,9 +243,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
             };
             frame.render_widget(block, cell);
             frame.render_widget(text, text_rect);
-            square_cell_counter += 1;
         }
-        current_square += 1;
     }
 
     true
@@ -323,8 +271,8 @@ fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
     ));
 
     let mut counts = "".to_string();
-    for i in 0..cell_count.len() {
-        counts = format!("{} {}:{}", counts, i + 1, cell_count[i]);
+    for (i, val) in cell_count.iter().enumerate() {
+        counts = format!("{} {}:{}", counts, i + 1, val);
     }
 
     let text = Paragraph::new(counts).alignment(Alignment::Center);
@@ -372,7 +320,62 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
 }
 
 /*
-    Converts the puzzles strange coordinate system into more familiar x and y cords
+    Determine if the given cell should display as an error
+*/
+fn cell_error(point_cords: &Point, current_square: usize, ui: &UI) -> bool {
+    let mut duplicate_found = false;
+    if ui.displayed_puzzle[point_cords.as_board_cords()] != EMPTY_SPACE {
+        let mut counter = 0;
+        // check for any duplicates in the same square
+        let row = current_square - (current_square % BOARD_LENGTH);
+        for i in row..row + BOARD_LENGTH {
+            let current_cord = square_to_point_cords(current_square, i);
+            if ui.displayed_puzzle[point_cords.as_board_cords()]
+                == ui.displayed_puzzle[current_cord.as_board_cords()]
+            {
+                counter += 1;
+            }
+        }
+
+        duplicate_found = counter > 1;
+
+        counter = 0;
+        //check for any duplication in the same col
+        for i in 0..BOARD_LENGTH {
+            let p = Point {
+                x: i,
+                y: point_cords.y,
+            };
+            if ui.displayed_puzzle[p.as_board_cords()]
+                == ui.displayed_puzzle[point_cords.as_board_cords()]
+            {
+                counter += 1;
+            }
+        }
+
+        duplicate_found |= counter > 1;
+
+        counter = 0;
+        //check for any duplication in the same row
+        for i in 0..BOARD_LENGTH {
+            let p = Point {
+                x: point_cords.x,
+                y: i,
+            };
+            if ui.displayed_puzzle[p.as_board_cords()]
+                == ui.displayed_puzzle[point_cords.as_board_cords()]
+            {
+                counter += 1;
+            }
+        }
+
+        duplicate_found |= counter > 1;
+    }
+    duplicate_found
+}
+
+/*
+    Converts the puzzles strange coordinate system into more familiar / easier to work with x and y cords
 */
 fn square_to_point_cords(square_number: usize, cell_number: usize) -> Point {
     let col = (square_number % 3) * 3 + cell_number % 3;
@@ -381,7 +384,9 @@ fn square_to_point_cords(square_number: usize, cell_number: usize) -> Point {
     Point { x: col, y: row }
 }
 
-// Helper function to take a rect and split it equally into a 3x3 rect
+/*
+    Helper function to take a rect and split it equally into a 3x3 rect
+*/
 fn split_rect_into_three_by_three_square(area: Rect) -> Vec<Rect> {
     let mut rets = vec![];
     let rows = split_rect_into_three(area, Direction::Vertical);
@@ -391,7 +396,9 @@ fn split_rect_into_three_by_three_square(area: Rect) -> Vec<Rect> {
     rets
 }
 
-// Helper function to split a rect into three equally sized Rects
+/*
+    Helper function to split a rect into three equally sized Rects
+*/
 fn split_rect_into_three(area: Rect, dir: Direction) -> Vec<Rect> {
     Layout::default()
         .direction(dir)
