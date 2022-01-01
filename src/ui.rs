@@ -1,5 +1,6 @@
 use crate::events::{Event, Events};
 use crate::puzzle::{Puzzle, PuzzleType, SudokuPuzzle};
+use crate::themes;
 
 use std::io::{self, Stdout};
 use termion::{
@@ -11,7 +12,7 @@ use termion::{
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::Span,
     widgets::{Block, BorderType, Borders, Paragraph},
     Frame, Terminal,
@@ -60,6 +61,8 @@ impl Point {
         self.x + ROWS * self.y
     }
 }
+
+const BOARD_THEME: themes::Theme = themes::TRANQUIL;
 
 type SudokuFrame<'a> =
     Frame<'a, TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<Stdout>>>>>;
@@ -148,7 +151,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
         .title(Span::styled(
             "sudoku-rs",
             Style::default()
-                .fg(Color::LightYellow)
+                .fg(BOARD_THEME.title_color)
                 .add_modifier(Modifier::BOLD),
         ))
         .border_type(BorderType::Rounded);
@@ -196,8 +199,16 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
             };
 
             let (mut bg_color, text_color, locked_square_color) = match current_square % 2 {
-                0 => (Color::White, Color::Black, Color::Gray),
-                _ => (Color::Gray, Color::Black, Color::White),
+                0 => (
+                    BOARD_THEME.light_square_color,
+                    BOARD_THEME.dark_number_color,
+                    BOARD_THEME.dark_square_color,
+                ),
+                _ => (
+                    BOARD_THEME.dark_square_color,
+                    BOARD_THEME.light_number_color,
+                    BOARD_THEME.light_square_color,
+                ),
             };
 
             let mut duplicate_found = false;
@@ -250,9 +261,9 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
             }
 
             if point_cords == ui.highlighted_cell {
-                bg_color = Color::Rgb(184, 255, 184);
+                bg_color = BOARD_THEME.highlighted_color;
             } else if duplicate_found {
-                bg_color = Color::LightRed;
+                bg_color = BOARD_THEME.error_color;
             }
 
             let char = ui.displayed_puzzle[point_cords.to_board_cords()];
@@ -307,7 +318,7 @@ fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
     let score_block = Block::default().borders(Borders::ALL).title(Span::styled(
         "Info",
         Style::default()
-            .fg(Color::LightYellow)
+            .fg(BOARD_THEME.title_color)
             .add_modifier(Modifier::BOLD),
     ));
 
@@ -345,7 +356,7 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
     let block = Block::default().borders(Borders::ALL).title(Span::styled(
         "Controls",
         Style::default()
-            .fg(Color::LightYellow)
+            .fg(BOARD_THEME.title_color)
             .add_modifier(Modifier::BOLD),
     ));
 
