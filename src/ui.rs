@@ -72,6 +72,7 @@ pub struct UI {
     highlighted_cell: Point,
     cell_counts: [u8; BOARD_LENGTH],
     time_in_ms: u64,
+    gave_up: bool,
 }
 
 impl UI {
@@ -84,6 +85,7 @@ impl UI {
             highlighted_cell: Point { x: 0, y: 0 },
             cell_counts: [0; BOARD_LENGTH],
             time_in_ms: 0,
+            gave_up: false,
         }
     }
 
@@ -108,7 +110,17 @@ impl UI {
                 })
                 .unwrap();
 
-            match events.next().unwrap() {
+            let event = events.next().unwrap();
+            if self.gave_up {
+                match event {
+                    Event::Input(Key::Char('z')) => self.new_game(Difficulty::Easy),
+                    Event::Input(Key::Char('x')) => self.new_game(Difficulty::Hard),
+                    Event::Input(Key::Char('q')) | Event::Input(Key::Ctrl('c')) => break,
+                    _ => continue
+                }
+            }
+
+            match event {
                 Event::Input(key) => {
                     match key {
                         // movement using arrow keys or vim movement keys
@@ -128,6 +140,7 @@ impl UI {
                         Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
                         Key::Char('z') => self.new_game(Difficulty::Easy),
                         Key::Char('x') => self.new_game(Difficulty::Hard),
+                        Key::Char('g') => self.give_up(),
                         Key::Char('q') | Key::Ctrl('c') => break,
                         _ => {}
                     }
@@ -141,6 +154,7 @@ impl UI {
         self.time_in_ms = 0;
         self.puzzle = Puzzle::new_puzzle(difficulty);
         self.displayed_puzzle = self.puzzle.puzzle;
+        self.gave_up = false;
 
         // cell counts will be updated automatically on the next frame render
     }
@@ -149,6 +163,11 @@ impl UI {
         if self.puzzle.puzzle[self.highlighted_cell.as_board_cords()] == EMPTY_SPACE {
             self.displayed_puzzle[self.highlighted_cell.as_board_cords()] = val;
         }
+    }
+
+    fn give_up(&mut self) {
+        self.gave_up = true;
+        self.displayed_puzzle = self.puzzle.solution;
     }
 }
 
