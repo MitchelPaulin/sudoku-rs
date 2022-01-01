@@ -9,6 +9,7 @@ use termion::{
     raw::{IntoRawMode, RawTerminal},
     screen::AlternateScreen,
 };
+use tui::text::Spans;
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -23,7 +24,7 @@ const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
 const CONTROLS: &str =
-    "Select cell: hjkl | ← ↓ ↑ →\nErase cell: space\nStart new puzzle(Easy, Hard): z, x\nGive up: g\nQuit: q";
+    "Select cell: hjkl | ← ↓ ↑ →\nErase cell: space\nStart new puzzle(Easy, Hard): z, x\nGive up: g\nQuit: q | Ctrl-C";
 
 #[derive(PartialEq)]
 pub struct Point {
@@ -73,6 +74,7 @@ pub struct UI {
     cell_counts: [u8; BOARD_LENGTH],
     time_in_ms: u64,
     gave_up: bool,
+    has_won: bool,
 }
 
 impl UI {
@@ -86,6 +88,7 @@ impl UI {
             cell_counts: [0; BOARD_LENGTH],
             time_in_ms: 0,
             gave_up: false,
+            has_won: false,
         }
     }
 
@@ -111,12 +114,12 @@ impl UI {
                 .unwrap();
 
             let event = events.next().unwrap();
-            if self.gave_up {
+            if self.gave_up || self.has_won {
                 match event {
                     Event::Input(Key::Char('z')) => self.new_game(Difficulty::Easy),
                     Event::Input(Key::Char('x')) => self.new_game(Difficulty::Hard),
                     Event::Input(Key::Char('q')) | Event::Input(Key::Ctrl('c')) => break,
-                    _ => continue
+                    _ => continue,
                 }
             }
 
@@ -155,6 +158,7 @@ impl UI {
         self.puzzle = Puzzle::new_puzzle(difficulty);
         self.displayed_puzzle = self.puzzle.puzzle;
         self.gave_up = false;
+        self.has_won = false;
 
         // cell counts will be updated automatically on the next frame render
     }
@@ -172,7 +176,7 @@ impl UI {
 }
 
 /*
-    Draw the puzzle window, return if the window could be drawn
+    Draw the puzzle window, return true if the window could be drawn
 */
 fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
     let terminal_rect = frame.size();
@@ -217,6 +221,9 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
         width: PUZZLE_WIDTH,
         height: PUZZLE_HEIGHT,
     };
+
+    let mut found_error = false;
+    let mut no_empty_cells = true;
     let large_table_cells = split_rect_into_three_by_three_square(rect);
     for (current_square, square) in large_table_cells.into_iter().enumerate() {
         let cells = split_rect_into_three_by_three_square(square);
@@ -241,13 +248,19 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
                 ),
             };
 
+            let is_err = cell_error(&point_cords, current_square, ui);
+            found_error |= is_err;
+
             if point_cords == ui.highlighted_cell {
                 bg_color = BOARD_THEME.highlighted_color;
-            } else if cell_error(&point_cords, current_square, ui) {
+            } else if is_err {
                 bg_color = BOARD_THEME.error_color;
             }
 
             let char = ui.displayed_puzzle[point_cords.as_board_cords()];
+
+            no_empty_cells &= char != EMPTY_SPACE;
+
             let fg_color = if ui.puzzle.puzzle[point_cords.as_board_cords()] != EMPTY_SPACE {
                 locked_square_color
             } else {
@@ -279,7 +292,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
             frame.render_widget(text, text_rect);
         }
     }
-
+    ui.has_won = !found_error && no_empty_cells;
     true
 }
 
@@ -304,17 +317,29 @@ fn draw_info_window(frame: &mut SudokuFrame, ui: &UI) {
             .add_modifier(Modifier::BOLD),
     ));
 
-    let mut info_str = "".to_string();
-    for (i, val) in ui.cell_counts.iter().enumerate() {
-        info_str = format!("{} {}:{}", info_str, i + 1, val);
-    }
+    let mut info_str = if ui.gave_up {
+        vec![Spans::from(Span::styled(
+            "You gave up :(",
+            Style::default().fg(BOARD_THEME.error_color),
+        ))]
+    } else if ui.has_won {
+        vec![Spans::from(Span::styled(
+            "You won, nice job!",
+            Style::default().fg(BOARD_THEME.victory_color),
+        ))]
+    } else {
+        let mut counts = "".to_string();
+        for (i, val) in ui.cell_counts.iter().enumerate() {
+            counts = format!("{} {}:{}", counts, i + 1, val).to_string();
+        }
+        vec![Spans::from(counts)]
+    };
 
-    info_str = format!(
-        "{}\nDifficulty: {}               Time: {}s",
-        info_str,
+    info_str.push(Spans::from(format!(
+        "\nDifficulty: {}               Time: {}s",
         ui.puzzle.difficulty,
         ui.time_in_ms / 1000
-    );
+    )));
 
     let text = Paragraph::new(info_str).alignment(Alignment::Center);
     frame.render_widget(
@@ -413,7 +438,7 @@ fn cell_error(point_cords: &Point, current_square: usize, ui: &UI) -> bool {
 
     duplicate_found |= counter > 1;
 
-    return duplicate_found;
+    duplicate_found
 }
 
 /*

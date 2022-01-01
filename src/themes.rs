@@ -8,7 +8,8 @@ pub struct Theme {
     pub error_color: Color,
     pub text_color: Color,
     pub light_number_color: Color,
-    pub dark_number_color: Color
+    pub dark_number_color: Color,
+    pub victory_color: Color
 }
 
 pub const TRANQUIL: Theme = Theme {
@@ -19,5 +20,6 @@ pub const TRANQUIL: Theme = Theme {
     error_color: Color::Rgb(255, 165, 161), // Pastel Red
     text_color: Color::White,
     light_number_color: Color::Black,
-    dark_number_color: Color::Black
+    dark_number_color: Color::Black,
+    victory_color: Color::Rgb(184, 255, 184), // Mint
 };
