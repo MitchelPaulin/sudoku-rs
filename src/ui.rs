@@ -68,6 +68,7 @@ pub struct UI {
     puzzle: Puzzle,
     displayed_puzzle: SudokuPuzzle,
     highlighted_cell: Point,
+    cell_counts: [u8; 9],
 }
 
 impl UI {
@@ -78,6 +79,7 @@ impl UI {
             puzzle: new_puzzle,
             displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
+            cell_counts: [0; 9],
         }
     }
 
@@ -96,7 +98,7 @@ impl UI {
             terminal
                 .draw(|frame| {
                     if draw_puzzle_window(frame, self) {
-                        draw_info_window(frame);
+                        draw_info_window(frame, &self.cell_counts);
                         draw_controls_window(frame);
                     }
                 })
@@ -136,9 +138,10 @@ impl UI {
 /*
     Draw the puzzle window, return if the window could be drawn
 */
-fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
+fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
     let terminal_rect = frame.size();
     let mut current_square = 0;
+    ui.cell_counts = [0; 9];
 
     let outer_block = Block::default()
         .borders(Borders::ALL)
@@ -184,12 +187,18 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
         let mut square_cell_counter = 0;
         let cells = split_rect_into_three_by_three_square(square);
         for cell in cells {
+            let point_cords = square_to_point_cords(current_square, square_cell_counter);
+
+            // update cell counts
+            match ui.displayed_puzzle[point_cords.to_board_cords()].to_digit(10) {
+                Some(num) => ui.cell_counts[num as usize - 1] += 1,
+                None => {}
+            };
+
             let (mut bg_color, text_color, locked_square_color) = match current_square % 2 {
                 0 => (Color::White, Color::Black, Color::Gray),
                 _ => (Color::Gray, Color::Black, Color::White),
             };
-
-            let point_cords = square_to_point_cords(current_square, square_cell_counter);
 
             let mut duplicate_found = false;
             if ui.displayed_puzzle[point_cords.to_board_cords()] != '_' {
@@ -281,7 +290,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &UI) -> bool {
     true
 }
 
-fn draw_info_window(frame: &mut SudokuFrame) {
+fn draw_info_window(frame: &mut SudokuFrame, cell_count: &[u8; 9]) {
     // don't render frame if there isn't enough room
     if frame.size().height <= PUZZLE_HEIGHT + 4 {
         return;
@@ -301,6 +310,20 @@ fn draw_info_window(frame: &mut SudokuFrame) {
             .fg(Color::LightYellow)
             .add_modifier(Modifier::BOLD),
     ));
+
+    let mut counts = "".to_string();
+    for i in 0..cell_count.len() {
+        counts = format!("{} {}:{}", counts, i + 1, cell_count[i]);
+    }
+
+    let text = Paragraph::new(counts).alignment(Alignment::Center);
+    frame.render_widget(
+        text,
+        Rect {
+            y: score_window.y + 1,
+            ..score_window
+        },
+    );
 
     frame.render_widget(score_block, score_window);
 }
