@@ -12,6 +12,7 @@ pub struct Theme {
     pub victory_color: Color,
 }
 
+#[allow(dead_code)]
 pub const TRANQUIL: Theme = Theme {
     title_color: Color::Rgb(170, 143, 121), // Pastel Brown
     dark_square_color: Color::Gray,
@@ -25,6 +26,7 @@ pub const TRANQUIL: Theme = Theme {
 };
 
 // https://github.com/dracula/dracula-theme
+#[allow(dead_code)]
 pub const DRACULA: Theme = Theme {
     title_color: Color::Rgb(181, 147, 249),
     dark_square_color: Color::Rgb(68, 71, 90),
