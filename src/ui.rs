@@ -296,7 +296,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
 
 fn draw_info_window(frame: &mut SudokuFrame, ui: &UI) {
     // don't render frame if there isn't enough room
-    if frame.size().height <= PUZZLE_HEIGHT + 4 {
+    if frame.size().height <= PUZZLE_HEIGHT + 6 {
         return;
     }
 
