@@ -20,3 +20,6 @@ There are two themes available, Tranquil and Dracula
 
 Or you can add your own in [themes.rs](./src/themes.rs)
 
+## Puzzle Generation
+
+Puzzle "seeds" are generated from [here](https://qqwing.com/generate.html).

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 tui = "0.16"
 termion = "1.5"
+rand = "0.8.4"
 
 [features]
 tranquil = []

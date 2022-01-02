@@ -1,9 +1,11 @@
+use rand::Rng;
 use std::fmt::{self};
 
 pub const EMPTY_SPACE: char = '_';
 
 pub type SudokuPuzzle = [char; 81];
 
+#[derive(PartialEq)]
 pub enum Difficulty {
     Easy,
     Hard,
@@ -26,9 +28,19 @@ pub struct Puzzle {
 
 impl Puzzle {
     pub fn new_puzzle(difficulty: Difficulty) -> Puzzle {
+        if difficulty == Difficulty::Easy {
+            let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
+            return Puzzle {
+                puzzle: PUZZLES_EASY[index].0,
+                solution: PUZZLES_EASY[index].1,
+                difficulty,
+            };
+        }
+
+        let index = rand::thread_rng().gen_range(0..HARD_PUZZLES);
         Puzzle {
-            puzzle: PUZZLES_EASY[0].0,
-            solution: PUZZLES_EASY[0].1,
+            puzzle: PUZZLES_HARD[index].0,
+            solution: PUZZLES_HARD[index].1,
             difficulty,
         }
     }
