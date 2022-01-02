@@ -1,6 +1,6 @@
 use crate::events::{Event, Events, TICK_RATE_MS};
 use crate::puzzle::{Difficulty, Puzzle, SudokuPuzzle, EMPTY_SPACE};
-use crate::themes;
+use crate::themes::BOARD_THEME;
 
 use std::io::{self, Stdout};
 use termion::{
@@ -61,8 +61,6 @@ impl Point {
         self.x + BOARD_LENGTH * self.y
     }
 }
-
-const BOARD_THEME: themes::Theme = themes::TRANQUIL;
 
 type SudokuFrame<'a> =
     Frame<'a, TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<Stdout>>>>>;
