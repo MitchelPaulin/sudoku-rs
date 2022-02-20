@@ -33,8 +33,7 @@ impl Puzzle {
         let mut puzzle;
 
         if difficulty == Difficulty::Easy {
-            //let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
-            let index = 1;
+            let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
             puzzle = Puzzle {
                 puzzle: PUZZLES_EASY[index].0,
                 solution: PUZZLES_EASY[index].1,
