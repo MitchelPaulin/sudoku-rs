@@ -5,6 +5,10 @@
 
 Fully featured Sudoku right in your terminal, built over a weekend using [tui-rs](https://github.com/fdehau/tui-rs). Get it from the [snap store](https://snapcraft.io/sudoku-rs).
 
+```bash
+sudo snap install sudoku-rs
+```
+
 ## Demo
 
 <p align="center">
