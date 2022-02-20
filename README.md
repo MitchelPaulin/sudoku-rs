@@ -1,8 +1,9 @@
 # sudoku-rs
 
+[![sudoku-rs](https://snapcraft.io/sudoku-rs/badge.svg)](https://snapcraft.io/sudoku-rs) 
 ![tests](https://github.com/MitchelPaulin/sudoku-rs/actions/workflows/rust.yml/badge.svg)
 
-Fully featured Sudoku right in your terminal, built over a weekend using [tui-rs](https://github.com/fdehau/tui-rs).
+Fully featured Sudoku right in your terminal, built over a weekend using [tui-rs](https://github.com/fdehau/tui-rs). Get it from the [snap store](https://snapcraft.io/sudoku-rs).
 
 ## Demo
 

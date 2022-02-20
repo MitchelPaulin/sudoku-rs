@@ -5,8 +5,8 @@ summary: Sudoku right in the terminal # 79 char long summary
 description: |
   Fully featured terminal based sudoku game, built using rust and tui.rs.
 
-grade: devel # must be 'stable' to release into candidate/stable channels
-confinement: devmode # use 'strict' once you have the right plugs and slots
+grade: stable # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
 
 parts:
   sudoku-rs:
@@ -19,4 +19,4 @@ apps:
   sudoku-rs:
     environment:
       LC_ALL: C.UTF-8
-    command: ./sudoku-rs
+    command: bin/sudoku-rs
