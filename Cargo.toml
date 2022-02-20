@@ -11,5 +11,6 @@ termion = "1.5"
 rand = "0.8.4"
 
 [features]
+default = ["tranquil"]
 tranquil = []
 dracula = []

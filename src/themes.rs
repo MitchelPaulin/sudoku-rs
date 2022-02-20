@@ -39,7 +39,7 @@ pub const DRACULA: Theme = Theme {
     victory_color: Color::Rgb(80, 250, 123),
 };
 
-#[cfg(feature = "tranquil")]
+#[cfg(not(feature = "dracula"))]
 pub const BOARD_THEME: Theme = TRANQUIL;
 #[cfg(feature = "dracula")]
 pub const BOARD_THEME: Theme = DRACULA;
