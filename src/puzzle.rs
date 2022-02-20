@@ -1,6 +1,8 @@
 use rand::Rng;
 use std::fmt::{self};
 
+use crate::puzzle_transformer::transform_puzzle;
+
 pub const EMPTY_SPACE: char = '_';
 
 pub type SudokuPuzzle = [char; 81];
@@ -28,21 +30,26 @@ pub struct Puzzle {
 
 impl Puzzle {
     pub fn new_puzzle(difficulty: Difficulty) -> Puzzle {
+        let mut puzzle;
+
         if difficulty == Difficulty::Easy {
-            let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
-            return Puzzle {
+            //let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
+            let index = 0;
+            puzzle = Puzzle {
                 puzzle: PUZZLES_EASY[index].0,
                 solution: PUZZLES_EASY[index].1,
                 difficulty,
             };
+        } else {
+            let index = rand::thread_rng().gen_range(0..HARD_PUZZLES);
+            puzzle = Puzzle {
+                puzzle: PUZZLES_HARD[index].0,
+                solution: PUZZLES_HARD[index].1,
+                difficulty,
+            }
         }
-
-        let index = rand::thread_rng().gen_range(0..HARD_PUZZLES);
-        Puzzle {
-            puzzle: PUZZLES_HARD[index].0,
-            solution: PUZZLES_HARD[index].1,
-            difficulty,
-        }
+        transform_puzzle((&mut puzzle.puzzle, &mut puzzle.solution));
+        puzzle
     }
 }
 
