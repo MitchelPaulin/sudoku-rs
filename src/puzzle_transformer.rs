@@ -1,6 +1,6 @@
 use crate::puzzle::SudokuPuzzle;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 /*
     Apply a series of transformations to the puzzle that keeps the puzzle solveable
@@ -11,7 +11,8 @@ use rand::thread_rng;
 */
 
 pub fn transform_puzzle(game: (&mut SudokuPuzzle, &mut SudokuPuzzle)) {
-    randomize_numbers(game);
+    //randomize_numbers(game);
+    rotate(game);
 }
 
 /*
@@ -39,6 +40,38 @@ fn randomize_numbers((puzzle, solution): (&mut SudokuPuzzle, &mut SudokuPuzzle))
         // ensure that the puzzle and solution stay in sync
         if puzzle[i] != '_' {
             puzzle[i] = solution[i];
+        }
+    }
+}
+
+/*
+    Rotate a puzzle, either 0, 90, 180, or 270 degrees
+*/
+fn rotate((puzzle, solution): (&mut SudokuPuzzle, &mut SudokuPuzzle)) {
+    let rot_count = rand::thread_rng().gen_range(0..=3);
+    for _ in 0..rot_count {
+        rotate_90(puzzle);
+        rotate_90(solution);
+    }
+}
+
+/*
+    Rotate the given puzzle 90 degrees
+*/
+fn rotate_90(matrix: &mut SudokuPuzzle) {
+    let mut res = *matrix;
+
+    for i in 0..9 {
+        for j in 0..9 {
+            // index magic was adapted from this helpful post: https://math.stackexchange.com/a/1676457/528931
+            res[j * 9 + 9 - i - 1] = matrix[i * 9 + j];
+        }
+    }
+
+    // copy results back to the original matrix
+    for i in 0..9 {
+        for j in 0..9 {
+            matrix[i * 9 + j] = res[i * 9 + j];
         }
     }
 }

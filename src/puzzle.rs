@@ -34,7 +34,7 @@ impl Puzzle {
 
         if difficulty == Difficulty::Easy {
             //let index = rand::thread_rng().gen_range(0..EASY_PUZZLES);
-            let index = 0;
+            let index = 1;
             puzzle = Puzzle {
                 puzzle: PUZZLES_EASY[index].0,
                 solution: PUZZLES_EASY[index].1,
