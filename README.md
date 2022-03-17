@@ -12,7 +12,7 @@ sudo snap install sudoku-rs
 ## Demo
 
 <p align="center">
-    <img src="./demo/demo.gif" height="600px">
+    <img src="./demo/demo.gif" width="75%">
 </p>
 
 ## Building & Themes
