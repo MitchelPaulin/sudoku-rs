@@ -23,7 +23,7 @@ const PUZZLE_WIDTH: u16 = 54;
 const PUZZLE_HEIGHT: u16 = 27;
 
 const CONTROLS: &str =
-    "Select cell: hjkl | ← ↓ ↑ →\nErase cell: space\nStart new puzzle(Easy, Hard): z, x\nGive up: g\nQuit: q | Ctrl-C";
+    "Select cell: hjkl | ← ↓ ↑ →\nErase cell: space\nStart new puzzle(Beginner, Easy, Hard): z, x, c\nGive up: g\nQuit: q | Ctrl-C";
 
 #[derive(PartialEq)]
 pub struct Point {
@@ -76,7 +76,7 @@ pub struct UI {
 
 impl UI {
     pub fn new() -> UI {
-        let new_puzzle = Puzzle::new_puzzle(Difficulty::Easy);
+        let new_puzzle = Puzzle::new_puzzle(Difficulty::Beginner);
         let displayed_puzzle = new_puzzle.puzzle;
         UI {
             puzzle: new_puzzle,
@@ -113,8 +113,9 @@ impl UI {
             let event = events.next().unwrap();
             if self.gave_up || self.has_won {
                 match event {
-                    Event::Input(Key::Char('z')) => self.new_game(Difficulty::Easy),
-                    Event::Input(Key::Char('x')) => self.new_game(Difficulty::Hard),
+                    Event::Input(Key::Char('z')) => self.new_game(Difficulty::Beginner),
+                    Event::Input(Key::Char('x')) => self.new_game(Difficulty::Easy),
+                    Event::Input(Key::Char('c')) => self.new_game(Difficulty::Hard),
                     Event::Input(Key::Char('q')) | Event::Input(Key::Ctrl('c')) => break,
                     _ => continue,
                 }
@@ -138,8 +139,9 @@ impl UI {
                         Key::Char('8') => self.update_displayed_board('8'),
                         Key::Char('9') => self.update_displayed_board('9'),
                         Key::Char(' ') => self.update_displayed_board(EMPTY_SPACE),
-                        Key::Char('z') => self.new_game(Difficulty::Easy),
-                        Key::Char('x') => self.new_game(Difficulty::Hard),
+                        Key::Char('z') => self.new_game(Difficulty::Beginner),
+                        Key::Char('x') => self.new_game(Difficulty::Easy),
+                        Key::Char('c') => self.new_game(Difficulty::Hard),
                         Key::Char('g') => self.give_up(),
                         Key::Char('q') | Key::Ctrl('c') => break,
                         _ => {}
