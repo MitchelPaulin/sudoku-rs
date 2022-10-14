@@ -27,7 +27,7 @@ Or you can add your own in [themes.rs](./src/themes.rs)
 
 ## Puzzle Generation
 
-Puzzle generation technique was taken from [this great Stack Excahnge answer](https://gamedev.stackexchange.com/a/76170)
+Puzzle generation technique was taken from [this great Stack Exchange answer](https://gamedev.stackexchange.com/a/76170)
 
 Puzzle "seeds" are generated from [here](https://qqwing.com/generate.html).
 
@@ -36,4 +36,4 @@ A series of transformations is then applied to a seed
 2. Rotate the puzzle by 0, 90, 180 or 270 degrees (4 variations)
 3. Reflect the puzzle vertically, horizontally, both or neither (4 variations)
 
-This way one seed can be used to create ~48,000,000 different puzzles
+This way one seed can be used to create ~4,800,000 different puzzles
