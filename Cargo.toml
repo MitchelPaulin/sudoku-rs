@@ -9,8 +9,4 @@ edition = "2021"
 tui = "0.16"
 termion = "1.5"
 rand = "0.8.4"
-
-[features]
-default = ["tranquil"]
-tranquil = []
-dracula = []
+dark-light = "1.0.0"

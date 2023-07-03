@@ -12,7 +12,6 @@ pub struct Theme {
     pub victory_color: Color,
 }
 
-#[allow(dead_code)]
 pub const TRANQUIL: Theme = Theme {
     title_color: Color::Rgb(170, 143, 121), // Pastel Brown
     dark_square_color: Color::Gray,
@@ -26,7 +25,6 @@ pub const TRANQUIL: Theme = Theme {
 };
 
 // https://github.com/dracula/dracula-theme
-#[allow(dead_code)]
 pub const DRACULA: Theme = Theme {
     title_color: Color::Rgb(181, 147, 249),
     dark_square_color: Color::Rgb(68, 71, 90),
@@ -38,8 +36,3 @@ pub const DRACULA: Theme = Theme {
     dark_number_color: Color::Rgb(248, 248, 242),
     victory_color: Color::Rgb(80, 250, 123),
 };
-
-#[cfg(not(feature = "dracula"))]
-pub const BOARD_THEME: Theme = TRANQUIL;
-#[cfg(feature = "dracula")]
-pub const BOARD_THEME: Theme = DRACULA;

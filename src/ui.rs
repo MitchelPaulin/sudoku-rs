@@ -1,6 +1,6 @@
 use crate::events::{Event, Events, TICK_RATE_MS};
 use crate::puzzle::{Difficulty, Puzzle, SudokuPuzzle, EMPTY_SPACE};
-use crate::themes::BOARD_THEME;
+use crate::themes::{Theme, TRANQUIL, DRACULA};
 
 use std::io::{self, Stdout};
 use termion::{
@@ -66,6 +66,7 @@ type SudokuFrame<'a> =
 
 pub struct UI {
     puzzle: Puzzle,
+    theme: Theme,
     displayed_puzzle: SudokuPuzzle,
     highlighted_cell: Point,
     cell_counts: [u8; BOARD_LENGTH],
@@ -78,8 +79,14 @@ impl UI {
     pub fn new() -> UI {
         let new_puzzle = Puzzle::new_puzzle(Difficulty::Beginner);
         let displayed_puzzle = new_puzzle.puzzle;
+        let theme : Theme = match dark_light::detect() {
+            dark_light::Mode::Dark => DRACULA,
+            dark_light::Mode::Light => TRANQUIL,
+            dark_light::Mode::Default => TRANQUIL,
+        };
         UI {
             puzzle: new_puzzle,
+            theme,
             displayed_puzzle,
             highlighted_cell: Point { x: 0, y: 0 },
             cell_counts: [0; BOARD_LENGTH],
@@ -105,7 +112,7 @@ impl UI {
                 .draw(|frame| {
                     if draw_puzzle_window(frame, self) {
                         draw_info_window(frame, self);
-                        draw_controls_window(frame);
+                        draw_controls_window(frame, self);
                     }
                 })
                 .unwrap();
@@ -186,7 +193,7 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
         .title(Span::styled(
             "sudoku-rs",
             Style::default()
-                .fg(BOARD_THEME.title_color)
+                .fg(ui.theme.title_color)
                 .add_modifier(Modifier::BOLD),
         ))
         .border_type(BorderType::Rounded);
@@ -236,14 +243,14 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
 
             let (mut bg_color, text_color, locked_square_color) = match current_square % 2 {
                 0 => (
-                    BOARD_THEME.light_square_color,
-                    BOARD_THEME.dark_number_color,
-                    BOARD_THEME.dark_square_color,
+                    ui.theme.light_square_color,
+                    ui.theme.dark_number_color,
+                    ui.theme.dark_square_color,
                 ),
                 _ => (
-                    BOARD_THEME.dark_square_color,
-                    BOARD_THEME.light_number_color,
-                    BOARD_THEME.light_square_color,
+                    ui.theme.dark_square_color,
+                    ui.theme.light_number_color,
+                    ui.theme.light_square_color,
                 ),
             };
 
@@ -251,9 +258,9 @@ fn draw_puzzle_window(frame: &mut SudokuFrame, ui: &mut UI) -> bool {
             found_error |= is_err;
 
             if point_cords == ui.highlighted_cell {
-                bg_color = BOARD_THEME.highlighted_color;
+                bg_color = ui.theme.highlighted_color;
             } else if is_err {
-                bg_color = BOARD_THEME.error_color;
+                bg_color = ui.theme.error_color;
             }
 
             let char = ui.displayed_puzzle[point_cords.as_board_cords()];
@@ -312,19 +319,19 @@ fn draw_info_window(frame: &mut SudokuFrame, ui: &UI) {
     let score_block = Block::default().borders(Borders::ALL).title(Span::styled(
         "Info",
         Style::default()
-            .fg(BOARD_THEME.title_color)
+            .fg(ui.theme.title_color)
             .add_modifier(Modifier::BOLD),
     ));
 
     let mut info_str = if ui.gave_up {
         vec![Spans::from(Span::styled(
             "You gave up :(",
-            Style::default().fg(BOARD_THEME.error_color),
+            Style::default().fg(ui.theme.error_color),
         ))]
     } else if ui.has_won {
         vec![Spans::from(Span::styled(
             "You won, nice job!",
-            Style::default().fg(BOARD_THEME.victory_color),
+            Style::default().fg(ui.theme.victory_color),
         ))]
     } else {
         let mut counts = "".to_string();
@@ -352,7 +359,7 @@ fn draw_info_window(frame: &mut SudokuFrame, ui: &UI) {
     frame.render_widget(score_block, score_window);
 }
 
-fn draw_controls_window(frame: &mut SudokuFrame) {
+fn draw_controls_window(frame: &mut SudokuFrame, ui: &UI) {
     // don't render frame if there isn't enough room
     if frame.size().height <= PUZZLE_HEIGHT + 12 {
         return;
@@ -369,7 +376,7 @@ fn draw_controls_window(frame: &mut SudokuFrame) {
     let block = Block::default().borders(Borders::ALL).title(Span::styled(
         "Controls",
         Style::default()
-            .fg(BOARD_THEME.title_color)
+            .fg(ui.theme.title_color)
             .add_modifier(Modifier::BOLD),
     ));
 
