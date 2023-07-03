@@ -17,9 +17,9 @@ sudo snap install sudoku-rs
 
 ## Building & Themes
 
-There are two themes available, Tranquil and Dracula
+There are two themes available, Tranquil and Dracula. The theme that is used is based on your systems color preferences.
 
-| `cargo build --features tranquil` | `cargo build --features dracula` |
+| `Tranquil` | `Dracula` |
 | :-------------------------------: | :------------------------------: |
 |  ![tranquil](demo/tranquil.png)   |  ![tranquil](demo/dracula.png)   |
 
