@@ -60,7 +60,7 @@ fn rotate((puzzle, solution): &mut (&mut SudokuPuzzle, &mut SudokuPuzzle)) {
     Rotate the given puzzle 90 degrees
 */
 fn rotate_90(matrix: &mut SudokuPuzzle) {
-    let mut res = matrix.clone();
+    let mut res = *matrix;
 
     for i in 0..9 {
         for j in 0..9 {

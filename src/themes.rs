@@ -6,7 +6,6 @@ pub struct Theme {
     pub light_square_color: Color,
     pub highlighted_color: Color,
     pub error_color: Color,
-    pub text_color: Color,
     pub light_number_color: Color,
     pub dark_number_color: Color,
     pub victory_color: Color,
@@ -18,7 +17,6 @@ pub const TRANQUIL: Theme = Theme {
     light_square_color: Color::White,
     highlighted_color: Color::Rgb(184, 255, 184), // Mint
     error_color: Color::Rgb(255, 165, 161),       // Pastel Red
-    text_color: Color::White,
     light_number_color: Color::Black,
     dark_number_color: Color::Black,
     victory_color: Color::Rgb(184, 255, 184), // Mint
@@ -31,7 +29,6 @@ pub const DRACULA: Theme = Theme {
     light_square_color: Color::Rgb(40, 42, 54),
     highlighted_color: Color::Rgb(189, 147, 249),
     error_color: Color::Rgb(255, 85, 85),
-    text_color: Color::Rgb(248, 248, 242),
     light_number_color: Color::Rgb(248, 248, 242),
     dark_number_color: Color::Rgb(248, 248, 242),
     victory_color: Color::Rgb(80, 250, 123),
